@@ -28,12 +28,6 @@ public interface Post_interface {
     // EFFECTS: se user ∉ this.likes && user != this.author si aggiunge user in coda alla lista likes
     public void addLikes(String user);
 
-    // REQUIRES: user != null && user ∈ this.likes
-    // THROWS: NullPointerException se user==null (unchecked exception) 
-    // MODIFIES: this
-    // EFFECTS: se user ∉ this.likes si rimuove dalla lista dei mi piace l'user di indexOf(user)
-    public void removeLikes(String user);
-  
   
  
 

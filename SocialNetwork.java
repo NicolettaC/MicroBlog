@@ -14,26 +14,55 @@ import src.Myexceptions.*;
 
 public class SocialNetwork implements SocialNetwork_interface {
 
-   private Map<String, Set<String>> Usersfollowing;  //Struttura dati con utenti associati ad utenti da essi seguiti  
+   //Elemento tipico
+   // <<Utente1, {Post1Utente1,Post2Utente1, ...}>,<Utente2,{Post1Utente2,Post2Utente2, ...}>  ...> 
+   // <<Utente1, {UtenteSeguito1,UtenteSeguito2, ...}>,<Utente2,{UtenteSeguito1,UtenteSeguito2, ...}>,  ...> 
+   // <<Id_Post, Post>,<Id_Post, Post>...>
+
+   //Funzione di astrazione
+   // α(c) = {c.posts.get(i) | 0 <= i < c.posts.size()}
+
+   //Invariante di rappresentazione
+   // ( for all i. 0 <= i < this.UserPosts.lenght() && for all j. 0 <= j < this.UserPosts.lenght() )
+   // => this.UserPosts.getKey(i) != this.UserPosts.getKey(j) && this.UserPosts.getKey(i) != null
+   // &&  ( for all i. 0 <= i < this.Posts.lenght() && for all j. 0 <= j < this.Posts.lenght() )
+   // => this.Posts.getKey(i) != this.Posts.getKey(j) && this.Posts.getKey(i) != null
+   // && ( for all i. 0 <= i < this.Usersfollowing.lenght() && for all j. 0 <= j < this.Usersfollowing.lenght() )
+   // => this.Usersfollowing.getKey(i) != this.Usersfollowing.getKey(j) && this.Usersfollowing.getKey(i) != null
+   // && this.UserFollowing.size() == this.UserPosts.size()
+   // && this.IDCount>=0
+
+
+
+
    private Map<String, Set<Post>> UsersPosts;        //Struttura dati con utenti associati ai loro post
-   private Map<Integer, Post> Posts;                //Struttura dati con tutti i post
-   private int ID;
+   private Map<String, Set<String>> Usersfollowing;  //Struttura dati con utenti associati ad utenti da essi seguiti  
+   private Map<Integer, Post> Posts;                 //Struttura dati con tutti i post
+
+   private int IDCount;                                   //contatore per dare id ai post
 
 
    public SocialNetwork (){
      
-      this.Usersfollowing = new HashMap<String, Set<String>>();
       this.UsersPosts = new HashMap<String, Set<Post>>();
+      this.Usersfollowing = new HashMap<String, Set<String>>();
       this.Posts = new HashMap<Integer, Post>();
-      this.ID=0;
+      this.IDCount=0;
 
    }
 
-   public Map<String, Set<String>> guessFollowers(List<Post> ps) throws NullPointerException{
+   public Map<String, Set<String>> guessFollowers(List<Post> ps) throws NullPointerException, NoPostException{
 
 
       if(ps==null){
          throw new NullPointerException();
+      }
+
+      for(Post iPost: ps){
+         int IdPost=iPost.getId();
+         if(this.Posts.containsKey(IdPost)==false){
+            throw new NoPostException("Il post con id  " + IdPost + " non esiste");
+         }
       }
 
       Map<String, Set<String>> copy = new HashMap<String, Set<String>>();
@@ -63,16 +92,22 @@ public class SocialNetwork implements SocialNetwork_interface {
 
    }
 
-  public List<String> influencers(Map<String,Set<String>> followers){
+  public List<String> influencers(Map<String,Set<String>> followers) throws NullPointerException{
       
+      if(followers==null){
+         throw new NullPointerException("Valori non validi");
+      }
+
+
+
       List<String> InfluencersOut = new LinkedList<String>();
-   
+      int soglia=4;
       for(String str : followers.keySet()){
 
         int  numFollowers = followers.get(str).size();
         int  numFollowing = this.Usersfollowing.get(str).size();
 
-        if(numFollowers > numFollowing && numFollowers > 4){
+        if(numFollowers > numFollowing && numFollowers > soglia){
            InfluencersOut.add(str);
         }
 
@@ -95,11 +130,19 @@ public class SocialNetwork implements SocialNetwork_interface {
 
    }
 
-   public Set<String> getMentionedUsers(List<Post> ps) throws NullPointerException {
+   public Set<String> getMentionedUsers(List<Post> ps) throws NullPointerException,NoPostException {
       
       if(ps==null){
          throw new NullPointerException();
       }
+
+      for(Post iPost: ps){
+         int IdPost=iPost.getId();
+         if(this.Posts.containsKey(IdPost)==false){
+            throw new NoPostException("Il post con id  " + IdPost + " non esiste");
+         }
+      }
+
       Set<String> users=new HashSet<String>();
 
       for(Post ipost: ps){
@@ -118,7 +161,7 @@ public class SocialNetwork implements SocialNetwork_interface {
       }
 
       if(this.UsersPosts.containsKey(username)==false){
-         throw new NoUserFoundException("l'utente non è stato registrato");
+         throw new NoUserFoundException("l'utente " +username+ " non è stato registrato");
       }
 
 
@@ -134,7 +177,7 @@ public class SocialNetwork implements SocialNetwork_interface {
 
    }
    
-   public List<Post> writtenBy(List<Post> ps, String username) throws NullPointerException, NoUserFoundException {
+   public List<Post> writtenBy(List<Post> ps, String username) throws NullPointerException, NoUserFoundException, NoPostException {
      
       if(ps == null){
          throw new NullPointerException();
@@ -143,7 +186,14 @@ public class SocialNetwork implements SocialNetwork_interface {
          throw new NullPointerException();
       }
      if(this.UsersPosts.containsKey(username)==false){
-      throw new NoUserFoundException("l'utente non è stato registrato");
+      throw new NoUserFoundException("l'utente " +username+" non è stato registrato");
+      }
+
+      for(Post iPost: ps){
+         int IdPost=iPost.getId();
+         if(this.Posts.containsKey(IdPost)==false){
+            throw new NoPostException("Il post con id  " + IdPost + " non esiste");
+         }
       }
 
       LinkedList<Post> PostUsername = new LinkedList<Post>();
@@ -211,32 +261,13 @@ public class SocialNetwork implements SocialNetwork_interface {
       }
 
       if (this.UsersPosts.containsKey(username)) {
-         throw new DuplicateUserException("questo username esiste già");
+         throw new DuplicateUserException(" username " + username + " esiste già");
      }
+     
     //aggiungo il suo nome alla lista utenti delle due strutture interne
      this.UsersPosts.put(username, new HashSet<Post>());
      this.Usersfollowing.put(username, new HashSet<String>());
     
-
-   }
-   //REQUIRES: username!=null && username ∈ utenti registrati
-   //THROWS: NullPointerException se username == null
-   //        NoUserFoundException se se username ∉ utenti registrati
-   //EFFECTS: Elimina un user dalla rete sociale
-   public void removeUser(String username) throws NullPointerException, NoUserFoundException{
-
-      if(username == null){
-         throw new NullPointerException();
-      }
-
-      if(this.UsersPosts.containsKey(username)==false){
-         throw new NoUserFoundException("l'utente non è stato registrato");
-      }
-
-      this.UsersPosts.remove(username);
-      this.Usersfollowing.remove(username);
-
-
 
    }
 
@@ -247,11 +278,11 @@ public class SocialNetwork implements SocialNetwork_interface {
    public Post CreateNewPost(String author, String text) throws NullPointerException, NoUserFoundException{
 
       if(author==null || text == null){
-         throw new NullPointerException();
+         throw new NullPointerException("valori non corretti");
       }
 
       if(this.UsersPosts.containsKey(author)==false){
-         throw new NoUserFoundException("l'utente non è stato registrato");
+         throw new NoUserFoundException("l'utente " + author +" non è stato registrato");
       }
 
       
@@ -266,41 +297,35 @@ public class SocialNetwork implements SocialNetwork_interface {
 
    }
 
-   //REQUIRES: username ∈ utenti registrati
+   //REQUIRES: id>0 && username != null && username ∈ utenti registrati && id ∈ posts
    //THROWS: NoUserFoundException se username ∉ utenti registrati
+   //        NullPointerException se username == null
+   //        NoPostException se  id ∉ posts
+   //        IllegalArgumentException se id<0
    //EFFECTS: Aggiunge un like ad un post e aggiorna le relazioni di following
-   public void Like(Post ps,String username) throws NoUserFoundException, DuplicateUserException{
+   public void Like(int id,String username) throws NoUserFoundException, NullPointerException, NoPostException, IllegalArgumentException{
       
-      if(ps==null || username == null){
-         throw new NullPointerException();
+      if( username == null ){
+         throw new NullPointerException("valori non corretti");
       } 
-
+      if( id < 0 ){
+         throw new IllegalArgumentException("valori non corretti");
+      } 
       if(this.UsersPosts.containsKey(username)==false){
-         throw new NoUserFoundException("l'utente non è stato registrato");
+         throw new NoUserFoundException("l'utente " +username+ " non è stato registrato");
       }
+      if(this.Posts.containsKey(id)==false){
+         throw new NoPostException("Il post con id  " +id+ " non esiste");
+      }
+
+      Post ps = this.Posts.get(id);
+      
       ps.addLikes(username);
 
-      this.Usersfollowing.get(username).add(ps.getAuthor());
-
-
-
-   }
-
-   //REQUIRES: username ∈ utenti registrati
-   //THROWS: NoUserFoundException se username ∉ utenti registrati
-   //EFFECTS: Elimina un like da un post e aggiorna le relazioni di following
-   public void Unlike(Post ps,String username) throws NoUserFoundException, DuplicateUserException{
-      
-      if(ps==null || username == null){
-         throw new NullPointerException();
-      } 
-
-      if(this.UsersPosts.containsKey(username)==false){
-         throw new NoUserFoundException("l'utente non è stato registrato");
+      if(username!=ps.getAuthor()){
+        this.Usersfollowing.get(username).add(ps.getAuthor());
       }
-      ps.removeLikes(username);
 
-      this.Usersfollowing.get(username).remove(ps.getAuthor());
 
    }
 
@@ -327,8 +352,7 @@ public class SocialNetwork implements SocialNetwork_interface {
    
    //EFFECTS: Restituisce id univoco 
    private int GetUnId(){
-      return(this.ID)++;
+      return(this.IDCount)++;
    }
-
 
 }
