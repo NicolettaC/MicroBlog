@@ -1,3 +1,5 @@
 # MicroBlog:
 
-This is an academic project about a social network analyzer.
+Università di Pisa Department of Computer Science.
+
+MicroBlog is a University project for Programming2 lab course about a social network analyzer.
